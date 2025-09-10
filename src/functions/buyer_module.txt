@@ -1,0 +1,121 @@
+void automation.test2(Int leadID)
+{
+info "Processing Lead ID: " + leadID;
+leadData = zoho.crm.getRecordById("Leads",leadID);
+info "Lead: " + leadData;
+try 
+{
+	if(leadData != null)
+	{
+		info "Lead data fetched successfully";
+		// Get Channel Partner lookup data
+		channelPartnerLookup = leadData.get("Channel_Partner");
+		info channelPartnerLookup;
+		a = channelPartnerLookup.get("id");
+		info a;
+		cpDetails = zoho.crm.getRecordById("Accounts",a);
+		info cpDetails;
+		b = cpDetails.get("Phone");
+		info b;
+		// Initialize webhook payload
+		webhookPayload = Map();
+		// Add Lead fields
+		webhookPayload.put("Lead_Id",leadID);
+		webhookPayload.put("Phone",leadData.get("Phone"));
+		webhookPayload.put("Email",leadData.get("Email"));
+		fullName = leadData.get("First_Name") + " " + leadData.get("Last_Name");
+		webhookPayload.put("Lead_Name",fullName);
+		webhookPayload.put("Lead_Source",leadData.get("Lead_Source"));
+		webhookPayload.put("Lead_Status",leadData.get("Lead_Status"));
+		webhookPayload.put("Created_Time",leadData.get("Created_Time"));
+		webhookPayload.put("Duplicate_Status",leadData.get("Duplicate_Status"));
+		webhookPayload.put("Lead_Owner",leadData.get("Lead_Owner"));
+		webhookPayload.put("Listing_Platform",leadData.get("Listing_Platform"));
+		webhookPayload.put("Project_name",leadData.get("Project_name"));
+		webhookPayload.put("Form_Name",leadData.get("Form_Name"));
+		webhookPayload.put("Campaign",leadData.get("Campaign"));
+		webhookPayload.put("Ad_set",leadData.get("Ad_set"));
+		webhookPayload.put("Form_ID",leadData.get("Form_ID"));
+		webhookPayload.put("Social_Lead_ID",leadData.get("Social_Lead_ID"));
+		webhookPayload.put("Ad_Name",leadData.get("Ad_Name"));
+		webhookPayload.put("No_Of_attempts",leadData.get("No_Of_attempts"));
+		webhookPayload.put("Interested_in_visit",leadData.get("Interested_in_visit"));
+		webhookPayload.put("Preferences",leadData.get("Preferences"));
+		webhookPayload.put("Use_Case",leadData.get("Use_Case"));
+		webhookPayload.put("Preferred_Area",leadData.get("Preferred_Area"));
+		webhookPayload.put("Current_Stay",leadData.get("Current_Stay"));
+		webhookPayload.put("Budget",leadData.get("Budget"));
+		webhookPayload.put("Preferred_time_of_Visit",leadData.get("Preferred_time_of_Visit"));
+		webhookPayload.put("Not_Qualified_Reason",leadData.get("Not_Qualified_Reason"));
+		webhookPayload.put("Closing_Timelines",leadData.get("Closing_Timelines"));
+		webhookPayload.put("Tag_Expiry_Date",leadData.get("Tag_Expiry_Date"));
+		webhookPayload.put("Truva_Micromarket",leadData.get("Truva_Micromarket"));
+		webhookPayload.put("DND",leadData.get("DND"));
+		webhookPayload.put("Referred_by",leadData.get("Referred_by"));
+		webhookPayload.put("Spouse_Name",leadData.get("Spouse_Name"));
+		webhookPayload.put("Spouse_Phone",leadData.get("Spouse_Phone"));
+		// Add Channel Partner data if lookup exists
+		if(channelPartnerLookup != null && channelPartnerLookup != "")
+		{
+			info "Channel Partner lookup found, fetching details...";
+			cpId = channelPartnerLookup.get("id");
+			cpDetails = zoho.crm.getRecordById("Accounts",cpId);
+			// 			cpData = zoho.crm.getRecordById("Channel_Partners",cpId);
+			if(cpDetails != null)
+			{
+				info "Channel Partner data fetched successfully";
+				// Extract Channel Partner Contact Name and Phone
+				webhookPayload.put("CP_Contact_Name",cpDetails.get("Contact_name"));
+				webhookPayload.put("CP_Phone",cpDetails.get("Phone"));
+				webhookPayload.put("CP_Id",cpId);
+				webhookPayload.put("CP_Name",cpDetails.get("Name"));
+				info "Channel Partner Contact Name: " + cpDetails.get("Contact_name");
+				info "Channel Partner Phone: " + cpDetails.get("Phone");
+			}
+			else
+			{
+				info "Failed to fetch Channel Partner data";
+				webhookPayload.put("CP_Contact_Name",null);
+				webhookPayload.put("CP_Phone",null);
+				webhookPayload.put("CP_Id",null);
+				webhookPayload.put("CP_Name",null);
+			}
+		}
+		else
+		{
+			info "No Channel Partner linked to this lead";
+			webhookPayload.put("CP_Contact_Name",null);
+			webhookPayload.put("CP_Phone",null);
+			webhookPayload.put("CP_Id",null);
+			webhookPayload.put("CP_Name",null);
+		}
+		info "Final webhook payload: " + webhookPayload;
+		// Send to API Gateway - remove .toString()
+		apiEndpoint = "https://qqvnbapdea.execute-api.ap-south-1.amazonaws.com/prod/buyer-leads";
+		response = invokeurl
+		[
+			url :apiEndpoint
+			type :POST
+			parameters:webhookPayload.toString()
+			headers:{"Content-Type":"application/json"}
+		];
+		info "API Response: " + response;
+		if(response != null)
+		{
+			info "Webhook sent successfully for Lead ID: " + leadID;
+		}
+		else
+		{
+			info "Failed to send webhook for Lead ID: " + leadID;
+		}
+	}
+	else
+	{
+		info "Failed to fetch Lead data - leadData is null";
+	}
+}
+catch (error)
+{
+	info "error: " + error;
+}
+}
